@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="sr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Moja tabla</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <a href="/" class="logo">Moja tabla</a>
+    <p>Oglasna tabla vaše ulice</p>
+  </header>
+
+  <main class="home">
+    <div class="home-intro">
+      <h1>Pronađi svoju tablu</h1>
+      <p>Pogledaj šta se dešava u tvojoj ulici.</p>
+    </div>
+
+    <div class="panel">
+      <section class="panel-section">
+        <label for="city">Grad</label>
+        <select id="city"></select>
+      </section>
+
+      <section class="panel-section" id="streets-section" hidden>
+        <h2>Ulice</h2>
+        <ul id="street-list" class="street-rows"></ul>
+      </section>
+
+      <section class="panel-section" id="new-street-section" hidden>
+        <h2>Ne vidiš svoju ulicu?</h2>
+        <p class="hint">Dodaj je i napravi novu tablu za komšiluk.</p>
+        <form id="street-form" class="inline-form">
+          <label for="street-name" class="visually-hidden">Naziv ulice</label>
+          <input id="street-name" type="text" maxlength="100" placeholder="Naziv ulice" required>
+          <button type="submit">Dodaj ulicu</button>
+        </form>
+      </section>
+
+      <p id="message" class="message" role="alert" hidden></p>
+    </div>
+  </main>
+
+  <script src="/js/common.js"></script>
+  <script src="/js/index.js"></script>
+</body>
+</html>

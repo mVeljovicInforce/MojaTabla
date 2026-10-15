@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="sr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Objava – Moja tabla</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <a href="/" class="logo">Moja tabla</a>
+    <p>Oglasna tabla vaše ulice</p>
+  </header>
+
+  <main class="board">
+    <p class="back"><a id="back-link" href="/">&larr; Nazad na tablu</a></p>
+    <p id="street-context" class="board-city"></p>
+
+    <p id="message" class="message" role="alert" hidden></p>
+
+    <article id="post" class="post post-detail" hidden></article>
+
+    <section id="comments-section" class="comments" aria-labelledby="comments-heading" hidden>
+      <h2 id="comments-heading">Komentari</h2>
+      <div id="comments"></div>
+
+      <form id="comment-form" class="comment-form">
+        <label for="comment-body">Dodaj komentar</label>
+        <textarea id="comment-body" rows="4" maxlength="1000" required></textarea>
+        <p id="comment-error" class="message" role="alert" hidden></p>
+        <button type="submit">Objavi komentar</button>
+      </form>
+    </section>
+  </main>
+
+  <script src="/js/common.js"></script>
+  <script src="/js/post.js"></script>
+</body>
+</html>

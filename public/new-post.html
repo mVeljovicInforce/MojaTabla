@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="sr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Nova objava – Moja tabla</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <a href="/" class="logo">Moja tabla</a>
+    <p>Oglasna tabla vaše ulice</p>
+  </header>
+
+  <main class="board">
+    <p class="back"><a id="back-link" href="/">&larr; Nazad na tablu</a></p>
+
+    <h1>Nova objava</h1>
+    <p id="street-name" class="hint"></p>
+
+    <form id="post-form" class="card" hidden>
+      <label for="category">Kategorija</label>
+      <select id="category" required></select>
+
+      <label for="title">Naslov</label>
+      <input id="title" type="text" maxlength="120" required>
+
+      <label for="body">Tekst</label>
+      <textarea id="body" rows="6" maxlength="1500" required></textarea>
+
+      <label for="house-number">Kućni broj (nije obavezno)</label>
+      <input id="house-number" type="text" maxlength="20">
+
+      <div class="form-actions">
+        <button type="submit">Objavi</button>
+        <a id="cancel-link" class="button button-secondary" href="/">Otkaži</a>
+      </div>
+    </form>
+
+    <p id="message" class="message" role="alert" hidden></p>
+  </main>
+
+  <script src="/js/common.js"></script>
+  <script src="/js/new-post.js"></script>
+</body>
+</html>

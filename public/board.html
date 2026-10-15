@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="sr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Tabla ulice – Moja tabla</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <a href="/" class="logo">Moja tabla</a>
+    <p>Oglasna tabla vaše ulice</p>
+  </header>
+
+  <main class="board board-wide">
+    <p class="back"><a href="/">&larr; Promeni ulicu</a></p>
+
+    <header class="board-head">
+      <div class="board-title">
+        <h1 id="board-title">Učitavanje…</h1>
+        <p id="board-city" class="board-city"></p>
+      </div>
+      <a id="new-post-link" class="button" href="#" hidden>+ Nova objava</a>
+    </header>
+
+    <p id="message" class="message" role="alert" hidden></p>
+
+    <section id="posts-section" aria-labelledby="posts-heading" hidden>
+      <h2 id="posts-heading">Objave</h2>
+      <div id="posts" class="posts"></div>
+    </section>
+  </main>
+
+  <script src="/js/common.js"></script>
+  <script src="/js/board.js"></script>
+</body>
+</html>
