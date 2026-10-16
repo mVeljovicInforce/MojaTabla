@@ -41,7 +41,11 @@ function createStreet(cityId, name, normalizedName) {
 
 function listPosts(streetId) {
   return db
-    .prepare(`SELECT ${POST_COLUMNS} FROM post WHERE street_id = ? ORDER BY created_at DESC, id DESC`)
+    .prepare(
+      `SELECT ${POST_COLUMNS},
+              (SELECT COUNT(*) FROM comment WHERE comment.post_id = post.id) AS commentCount
+       FROM post WHERE street_id = ? ORDER BY created_at DESC, id DESC`
+    )
     .all(streetId);
 }
 

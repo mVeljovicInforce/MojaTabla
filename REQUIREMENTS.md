@@ -91,6 +91,8 @@ The street board is the main product experience. It is primarily for READING not
 - FR-15 Each post on the street board is clickable: the title is a real link and the whole card acts as its target (accessible, with visible keyboard focus). The card does not look like a button.
 - FR-16 Each post has a dedicated detail page at `/post.html?post=ID` showing the content listed in Flow C. The post is visually dominant.
 - FR-17 Comments exist only on the post detail page. The street board shows no comments and no comment previews.
+- FR-17a Each board card shows a small text-only comment count in its footer next to the date: `Nema komentara`, `1 komentar`, `N komentara` (N ≥ 2). The count comes from `commentCount` in `GET /api/streets/:streetId/posts` (one query, no schema change). It is not a link and shows no comment content.
+- FR-17b The street board has a category filter between the `Objave` heading and the cards: wrapping chip buttons `Sve` + the six categories, `Sve` selected by default, one active at a time, with `aria-pressed` and a checkmark on the active chip. Filtering is client-side over the already loaded posts (no API change, newest-first order kept, no page reload, no URL/persisted state; it resets to `Sve` on reload or return). If posts exist but none match, `Nema objava u ovoj kategoriji.` is shown; a street with no posts at all keeps the normal empty state and shows no filter.
 - FR-18 Comments are flat (no replies/threads) and anonymous: no author, name, avatar or account is stored. A comment has id, post, body and created date/time. Every comment displays the fixed UI label `Anonimni komšija`; this label is a constant, not stored data and not an identity.
 - FR-19 Comments are listed oldest first (conversational order, D-10). Each comment shows the `Anonimni komšija` label, its text and its date/time (same `dd.mm.yyyy. u HH:mm` format as posts), as compact separate blocks that are clearly less prominent than the post.
 - FR-20 Comment creation: body required, trimmed, whitespace-only rejected, max 1000 characters; validated on the server (D-10). Success keeps the user on the post page and shows the new comment immediately.
@@ -200,7 +202,5 @@ The future model must NOT be simply `User -> street_id`. Conceptually it is `Use
 
 These are ideas only. None is a requirement, and none is in the current backlog. Each needs an explicit product decision and an entry in sections 4 to 7 before anyone implements it.
 
-- Showing a comment count on board cards.
-- Category filtering on the street board.
 - Important or pinned notices.
 - Relative time presentation, such as "danas" and "juče" (see OQ-7).

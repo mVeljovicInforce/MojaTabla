@@ -208,6 +208,23 @@ button:hover { background: #244a40; }
 }
 .empty-state p { margin: 0 0 0.9rem; color: #55504a; }
 
+/* Category filter: wrapping chips; the active one is filled, bold and checkmarked. */
+.category-filter { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0 0 1rem; }
+.filter-chip {
+  font: inherit;
+  font-size: 0.88rem;
+  color: #3d3a35;
+  background: #fffdf9;
+  border: 1px solid #b9ae98;
+  border-radius: 999px;
+  padding: 0.3rem 0.8rem;
+  margin-top: 0;
+  cursor: pointer;
+}
+.filter-chip:hover { background: #eef4f0; border-color: #2f5d50; }
+.filter-chip[aria-pressed="true"] { color: #fff; background: #2f5d50; border-color: #2f5d50; font-weight: 600; }
+.filter-chip[aria-pressed="true"]::before { content: "\2713\00a0"; }
+
 .form-actions { display: flex; align-items: center; gap: 0.75rem; margin-top: 1rem; }
 .form-actions button { margin-top: 0; }
 

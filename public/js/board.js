@@ -2,9 +2,15 @@ const streetId = getStreetId();
 const titleEl = document.getElementById('board-title');
 const postsEl = document.getElementById('posts');
 const newPostLink = document.getElementById('new-post-link');
-const postsSection = document.getElementById('posts-section');
+const filterEl = document.getElementById('category-filter');
+const postsSection =document.getElementById('posts-section');
 
 const newPostUrl = '/new-post.html?street=' + encodeURIComponent(streetId);
+
+function commentCountLabel(count) {
+  if (!count) return 'Nema komentara';
+  return count === 1 ? '1 komentar' : count + ' komentara';
+}
 
 // The title is a real link; CSS stretches it over the whole card.
 function renderTitle(post) {
@@ -19,7 +25,11 @@ function renderPost(post) {
   const article = element('article', 'post');
   const badge = element('span', 'badge badge-' + post.category, CATEGORY_LABELS[post.category] || post.category);
 
-  const footerText = (post.houseNumber ? 'Broj ' + post.houseNumber + ' · ' : '') + formatDate(post.createdAt);
+  const footerText =
+    (post.houseNumber ? 'Broj ' + post.houseNumber + ' · ' : '') +
+    formatDate(post.createdAt) +
+    ' · ' +
+    commentCountLabel(post.commentCount);
 
   article.append(
     badge,
@@ -38,13 +48,45 @@ function renderEmptyState() {
   return box;
 }
 
-function renderPosts(posts) {
+const ALL_LABEL = 'Sve';
+const EMPTY_CATEGORY_TEXT = 'Nema objava u ovoj kategoriji.';
+
+let allPosts = [];
+let activeCategory = null; // null = all
+
+function renderPosts() {
   postsEl.replaceChildren();
-  if (posts.length === 0) {
+  if (allPosts.length === 0) {
     postsEl.append(renderEmptyState());
     return;
   }
-  for (const post of posts) postsEl.append(renderPost(post));
+  const visible = activeCategory ? allPosts.filter((p) => p.category === activeCategory) : allPosts;
+  if (visible.length === 0) {
+    const box = element('div', 'empty-state');
+    box.append(element('p', '', EMPTY_CATEGORY_TEXT));
+    postsEl.append(box);
+    return;
+  }
+  for (const post of visible) postsEl.append(renderPost(post));
+}
+
+function renderFilter() {
+  const options = [[null, ALL_LABEL], ...Object.entries(CATEGORY_LABELS)];
+  filterEl.replaceChildren();
+  for (const [category, label] of options) {
+    const button = element('button', 'filter-chip', label);
+    button.type = 'button';
+    button.setAttribute('aria-pressed', String(category === activeCategory));
+    button.addEventListener('click', () => {
+      activeCategory = category;
+      for (const chip of filterEl.children) {
+        chip.setAttribute('aria-pressed', String(chip === button));
+      }
+      renderPosts();
+    });
+    filterEl.append(button);
+  }
+  filterEl.hidden = allPosts.length === 0;
 }
 
 async function init() {
@@ -55,7 +97,10 @@ async function init() {
     document.title = street.name + ' – Moja tabla';
     newPostLink.href = newPostUrl;
     newPostLink.hidden = false;
-    renderPosts(await api('/streets/' + encodeURIComponent(streetId) + '/posts'));
+    allPosts = await api('/streets/' + encodeURIComponent(streetId) + '/posts');
+    activeCategory = null;
+    renderFilter();
+    renderPosts();
     postsSection.hidden = false;
   } catch (e) {
     titleEl.textContent = 'Ulica nije pronađena';
