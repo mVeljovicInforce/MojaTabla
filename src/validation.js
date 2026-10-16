@@ -40,6 +40,10 @@ function validatePost(input) {
   const body = typeof data.body === 'string' ? data.body.trim() : '';
   const houseNumber = typeof data.houseNumber === 'string' ? data.houseNumber.trim() : '';
 
+  if (data.isImportant != null && typeof data.isImportant !== 'boolean') {
+    return { error: 'Neispravna vrednost za oznaku važno.' };
+  }
+
   if (!CATEGORIES.includes(category)) return { error: 'Izaberite kategoriju.' };
   if (!title) return { error: 'Naslov je obavezan.' };
   if (length(title) > LIMITS.title) {
@@ -53,7 +57,9 @@ function validatePost(input) {
     return { error: `Broj može imati najviše ${LIMITS.houseNumber} karaktera.` };
   }
 
-  return { value: { category, title, body, houseNumber: houseNumber || null } };
+  return {
+    value: { category, title, body, houseNumber: houseNumber || null, isImportant: data.isImportant === true },
+  };
 }
 
 // Returns { error } or { value }.

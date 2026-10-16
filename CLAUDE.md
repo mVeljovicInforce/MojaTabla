@@ -5,7 +5,7 @@ Guidance for Claude Code sessions. Read `REQUIREMENTS.md` first; it is the sourc
 ## Product in one line
 Serbian-only local notice board where each **street** has its own board. A practical notice board, not a social network.
 
-Current implemented features: home page (choose city and street, or add a street), street board with newest-first posts, dedicated new-post page, dedicated post detail page, and flat anonymous comments on the post detail page. `REQUIREMENTS.md` is the source of truth for scope and must stay in sync with the code.
+Current implemented features: home page (choose city and street, or add a street), street board with important-first, then newest-first posts and a category filter, dedicated new-post page, dedicated post detail page, and flat anonymous comments on the post detail page. `REQUIREMENTS.md` is the source of truth for scope and must stay in sync with the code.
 
 ## Current priority
 Focus on the street-board experience: creating and reading posts, navigation and usability, visual design, categories and useful local-board features, and overall product feel. Comments are a current feature, but they stay on the post detail page.
@@ -21,11 +21,12 @@ Not allowed without asking: React, Next.js, TypeScript, Docker, microservices, O
 - One Express process serving a JSON API plus static HTML/CSS/JS files. No server-side templating engine, no build step.
 - Thin layers: `src/routes/api.js` (HTTP) → `src/queries.js` (plain SQL) with `src/db.js` for the connection. No service/repository abstraction until duplication actually hurts.
 - Plain SQL with parameterized queries (never string-concatenate user input). Schema lives in `db/schema.sql`, applied on startup with `CREATE ... IF NOT EXISTS`. Seed data lives in `db/seed.js`.
-- There is no migration framework yet. `IF NOT EXISTS` only creates missing tables; it does not alter existing ones. Any change to an existing table needs a deliberate migration step, agreed first.
+- Product rule: "important" (`post.is_important`) is a post property, not a category, and is temporarily settable by any anonymous poster. Do not build roles or permissions around it without asking.
+- There is no migration framework yet. `IF NOT EXISTS` only creates missing tables; it does not alter existing ones. Any change to an existing table needs a deliberate migration step, agreed first (the one existing case is the `PRAGMA table_info` check in `src/db.js` that adds `post.is_important` to older databases).
 - Model the hierarchy honestly (city → street → post with foreign keys) so Area/Building levels and visibility scope can be added later by a migration. Do NOT add those tables/columns/code now.
 - Frontend: static pages, small ES-module-free vanilla JS files, `fetch` against the API. Escape all user content (use `textContent`, never `innerHTML` with user data).
 - UX shape: the street board (`board.html`) is read-first and must not embed the post form or any comments. Creating a post happens on `new-post.html?street=ID`, which redirects back to the board on success. Clicking a post opens `post.html?post=ID`, where flat anonymous comments are read and added. Board comment threads or previews must never be rendered on board cards. See `REQUIREMENTS.md` section 4.
-- Board layout is responsive: one column on mobile, about two on medium widths, about three on large desktops, with a restrained notice-board look on multi-column layouts. Keep the DOM in newest-first order so visual and keyboard order match. The richer desktop layout must never reduce mobile usability (single column, full width, no horizontal overflow).
+- Board layout is responsive: one column on mobile, about two on medium widths, about three on large desktops, with a restrained notice-board look on multi-column layouts. Keep the DOM in board order (important posts first, newest first within each group; the server sorts, the client filter must not reorder) so visual and keyboard order match. The richer desktop layout must never reduce mobile usability (single column, full width, no horizontal overflow).
 
 ## Future direction (do NOT implement)
 Long term the product may get user accounts and trusted local membership (see `REQUIREMENTS.md` section 9). It is documented only so today's structures do not make it needlessly hard. Everything below is FUTURE / POST-MVP and not in the backlog unless the product owner explicitly says so:

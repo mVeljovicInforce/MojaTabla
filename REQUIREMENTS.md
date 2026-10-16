@@ -52,7 +52,7 @@ The street board is the main product experience. It is primarily for READING not
 1. User opens the app (home page).
 2. User selects a city.
 3. User selects an existing street or enters a street name.
-4. User lands on that street's board. The street name is shown at the top, with the `+ Nova objava` action near it, and existing posts are visible immediately, newest first.
+4. User lands on that street's board. The street name is shown at the top, with the `+ Nova objava` action near it, and existing posts are visible immediately, important ones first, then newest first.
 5. The post creation form is NOT shown on the board page.
 
 **Flow B — Create a post**
@@ -78,7 +78,7 @@ The street board is the main product experience. It is primarily for READING not
 - FR-2 After a city is chosen, the user can pick an existing street of that city or enter a street name (see D-3, D-4, D-7).
 - FR-3 Each street has exactly one board at a stable URL.
 - FR-4 The board lists the street's posts: category, title, body, house number (if any), created date/time.
-- FR-5 Post ordering: newest first (D-6).
+- FR-5 Post ordering: important posts first, then ordinary posts; newest first within each group (D-6, FR-17c).
 - FR-6 Post creation is on a dedicated new-post page (not on the board), with the fields above; category from the fixed list. See Flow B.
 - FR-7 Server-side validation: category valid, title and body non-empty, length limits (D-8), house number optional.
 - FR-8 A created post appears on that street's board only.
@@ -93,20 +93,21 @@ The street board is the main product experience. It is primarily for READING not
 - FR-17 Comments exist only on the post detail page. The street board shows no comments and no comment previews.
 - FR-17a Each board card shows a small text-only comment count in its footer next to the date: `Nema komentara`, `1 komentar`, `N komentara` (N ≥ 2). The count comes from `commentCount` in `GET /api/streets/:streetId/posts` (one query, no schema change). It is not a link and shows no comment content.
 - FR-17b The street board has a category filter between the `Objave` heading and the cards: wrapping chip buttons `Sve` + the six categories, `Sve` selected by default, one active at a time, with `aria-pressed` and a checkmark on the active chip. Filtering is client-side over the already loaded posts (no API change, newest-first order kept, no page reload, no URL/persisted state; it resets to `Sve` on reload or return). If posts exist but none match, `Nema objava u ovoj kategoriji.` is shown; a street with no posts at all keeps the normal empty state and shows no filter.
+- FR-17c A post may be marked important with the optional, unchecked-by-default `Označi kao važno` checkbox on the new-post page (hint: `Za obaveštenja koja komšije treba posebno da primete.`). Important is a post property, not a category. Board order is important posts (newest first) followed by ordinary posts (newest first); the category filter keeps this order. Important cards and the post detail page show a small `Važno` label; cards also get a slightly stronger border and a faint tint. The API returns `isImportant` (boolean); creation accepts `isImportant` and rejects non-boolean values. Stored as `post.is_important` (0/1, default 0); existing posts are ordinary. TEMPORARY: with no accounts or moderation, any anonymous poster can mark a post important. This must be revisited when accounts/moderation exist.
 - FR-18 Comments are flat (no replies/threads) and anonymous: no author, name, avatar or account is stored. A comment has id, post, body and created date/time. Every comment displays the fixed UI label `Anonimni komšija`; this label is a constant, not stored data and not an identity.
 - FR-19 Comments are listed oldest first (conversational order, D-10). Each comment shows the `Anonimni komšija` label, its text and its date/time (same `dd.mm.yyyy. u HH:mm` format as posts), as compact separate blocks that are clearly less prominent than the post.
 - FR-20 Comment creation: body required, trimmed, whitespace-only rejected, max 1000 characters; validated on the server (D-10). Success keeps the user on the post page and shows the new comment immediately.
 - FR-21 Comments cannot be edited, deleted, replied to or reacted to.
 - FR-22 Invalid/missing post ids and invalid comment bodies produce clear Serbian messages; user-provided text (posts and comments) is rendered without raw HTML insertion and keeps line breaks. Long unbroken text wraps and never causes horizontal scrolling.
 - FR-23 The street board layout is responsive: 1 column on mobile, about 2 columns on medium widths, about 3 columns on large desktops. Cards keep their natural heights. DOM, Tab and visual order are the same and are newest first.
-- FR-24 On multi-column layouts the board cards use a restrained notice-board look: warm paper-like surfaces, light borders and shadow, a small pin detail, and a tilt of at most about 0.5 degrees. Cards have no tilt on mobile. The category badge remains the primary category indicator. This is visual only and must not change behaviour or content.
+- FR-24 On multi-column layouts the board cards use a restrained notice-board look: warm paper-like surfaces, light borders and shadow, no pin dot (it could be mistaken for `Važno`), and a tilt of at most about 0.5 degrees. Cards have no tilt on mobile. The category badge remains the primary category indicator. This is visual only and must not change behaviour or content.
 - FR-25 The street board page and the post detail page are mobile-first. The desktop layouts may be richer, but mobile must stay single-column, full-width, without horizontal overflow, and with comfortably tappable controls.
 
 ## 6. Simple data model (conceptual)
 
 - **city**: id, name
 - **street**: id, city_id → city, name, normalized_name
-- **post**: id, street_id → street, category, title, body, house_number (nullable), created_at
+- **post**: id, street_id → street, category, title, body, house_number (nullable), is_important (0/1, default 0), created_at
 - **comment**: id, post_id → post, body, created_at (no author; flat, no parent comment)
 
 Notes for evolvability (no extra tables/columns now): streets belong to a city via `city_id`; a future `area` level could sit between city and street; a future visibility scope would be one added column on `post`. `street` also has `normalized_name` with `UNIQUE(city_id, normalized_name)` (D-7). Categories are a fixed list of codes (D-9) enforced by the app and a CHECK constraint. The current model has no users or memberships; see section 9 for the intended future shape (do not add it now).
@@ -202,5 +203,4 @@ The future model must NOT be simply `User -> street_id`. Conceptually it is `Use
 
 These are ideas only. None is a requirement, and none is in the current backlog. Each needs an explicit product decision and an entry in sections 4 to 7 before anyone implements it.
 
-- Important or pinned notices.
 - Relative time presentation, such as "danas" and "juče" (see OQ-7).

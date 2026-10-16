@@ -31,6 +31,12 @@
       <label for="house-number">Kućni broj (nije obavezno)</label>
       <input id="house-number" type="text" maxlength="20">
 
+      <div class="important-option">
+        <input id="is-important" type="checkbox" aria-describedby="is-important-hint">
+        <label for="is-important">Označi kao važno</label>
+        <p id="is-important-hint" class="hint">Za obaveštenja koja komšije treba posebno da primete.</p>
+      </div>
+
       <div class="form-actions">
         <button type="submit">Objavi</button>
         <a id="cancel-link" class="button button-secondary" href="/">Otkaži</a>

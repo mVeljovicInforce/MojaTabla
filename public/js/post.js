@@ -11,6 +11,7 @@ const postPath = '/posts/' + encodeURIComponent(postId);
 
 function renderPost(post) {
   postEl.replaceChildren(
+    ...(post.isImportant ? [element('span', 'badge badge-important', IMPORTANT_LABEL)] : []),
     element('span', 'badge badge-' + post.category, CATEGORY_LABELS[post.category] || post.category),
     element('h1', 'post-title', post.title),
     element('p', 'post-body', post.body),

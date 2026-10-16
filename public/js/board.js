@@ -22,7 +22,7 @@ function renderTitle(post) {
 }
 
 function renderPost(post) {
-  const article = element('article', 'post');
+  const article = element('article', post.isImportant ? 'post post-important' : 'post');
   const badge = element('span', 'badge badge-' + post.category, CATEGORY_LABELS[post.category] || post.category);
 
   const footerText =
@@ -32,6 +32,7 @@ function renderPost(post) {
     commentCountLabel(post.commentCount);
 
   article.append(
+    ...(post.isImportant ? [element('span', 'badge badge-important', IMPORTANT_LABEL)] : []),
     badge,
     renderTitle(post),
     element('p', 'post-body', post.body),

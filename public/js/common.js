@@ -9,6 +9,8 @@ const CATEGORY_LABELS = {
   dogadjaj: 'Događaj',
 };
 
+const IMPORTANT_LABEL = 'Važno';
+
 function getStreetId() {
   return new URLSearchParams(window.location.search).get('street');
 }

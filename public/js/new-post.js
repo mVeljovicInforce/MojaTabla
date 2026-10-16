@@ -29,6 +29,7 @@ form.addEventListener('submit', async (event) => {
         title: document.getElementById('title').value,
         body: document.getElementById('body').value,
         houseNumber: document.getElementById('house-number').value,
+        isImportant: document.getElementById('is-important').checked,
       },
     });
     // replace() keeps the finished form out of the back-button history.
