@@ -70,6 +70,8 @@ router.post('/streets/:streetId/posts', (req, res) => {
   res.status(201).json(queries.createPost(street.id, value));
 });
 
+const EXPIRED_COMMENT_ERROR = 'Komentarisanje nije dostupno jer je objava istekla.';
+
 router.get('/posts/:postId', (req, res) => {
   const post = findPost(req, res);
   if (post) res.json(post);
@@ -83,6 +85,8 @@ router.get('/posts/:postId/comments', (req, res) => {
 router.post('/posts/:postId/comments', (req, res) => {
   const post = findPost(req, res);
   if (!post) return;
+
+  if (post.isExpired) return res.status(409).json({ error: EXPIRED_COMMENT_ERROR });
 
   const { error, value } = validateComment(req.body);
   if (error) return res.status(400).json({ error });

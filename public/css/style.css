@@ -225,6 +225,8 @@ button:hover { background: #244a40; }
 .filter-chip[aria-pressed="true"] { color: #fff; background: #2f5d50; border-color: #2f5d50; font-weight: 600; }
 .filter-chip[aria-pressed="true"]::before { content: "\2713\00a0"; }
 
+#lifetime-hint { margin: 0.35rem 0 0; font-size: 0.85rem; }
+#comments-closed { margin: 0.75rem 0 0; font-size: 0.9rem; }
 .important-option { display: grid; grid-template-columns: auto 1fr; align-items: center; column-gap: 0.5rem; margin-top: 0.9rem; }
 .important-option input { width: 1.1rem; height: 1.1rem; margin: 0; }
 .important-option label { margin: 0; font-weight: 500; }
@@ -312,6 +314,7 @@ button:hover { background: #244a40; }
 .posts > .post:nth-child(3n) { background: #fefaf3; }
 /* Important notices: a slightly stronger border and a faint amber tint, plus the text label. */
 .posts > .post.post-important { background: #fff7e3; border-color: #c9a24a; }
+.badge-expired { background: #e8e4dc; color: #4a463f; margin-right: 0.35rem; }
 .badge-important { background: #f3dfae; color: #5e4208; margin-right: 0.35rem; }
 
 /* Two columns on tablets and small laptops. */

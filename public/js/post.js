@@ -10,12 +10,14 @@ const commentButton = commentForm.querySelector('button');
 const postPath = '/posts/' + encodeURIComponent(postId);
 
 function renderPost(post) {
+  const validity = !post.isExpired && post.expiresAt ? ' · Važi do ' + formatDate(post.expiresAt) : '';
   postEl.replaceChildren(
+    ...(post.isExpired ? [element('span', 'badge badge-expired', EXPIRED_LABEL)] : []),
     ...(post.isImportant ? [element('span', 'badge badge-important', IMPORTANT_LABEL)] : []),
     element('span', 'badge badge-' + post.category, CATEGORY_LABELS[post.category] || post.category),
     element('h1', 'post-title', post.title),
     element('p', 'post-body', post.body),
-    element('p', 'post-footer', (post.houseNumber ? 'Broj ' + post.houseNumber + ' \u00B7 ' : '') + formatDate(post.createdAt))
+    element('p', 'post-footer', (post.houseNumber ? 'Broj ' + post.houseNumber + ' \u00B7 ' : '') + formatDate(post.createdAt) + validity)
   );
   postEl.hidden = false;
 }
@@ -49,6 +51,8 @@ async function init() {
     document.getElementById('street-context').textContent = post.streetName + ', ' + post.cityName;
     renderPost(post);
     renderComments(await api(postPath + '/comments'));
+    commentForm.hidden = post.isExpired;
+    document.getElementById('comments-closed').hidden = !post.isExpired;
     commentsSection.hidden = false;
   } catch (e) {
     document.getElementById('back-link').textContent = '\u2190 Izaberi ulicu';

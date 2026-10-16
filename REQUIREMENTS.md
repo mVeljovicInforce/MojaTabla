@@ -69,7 +69,7 @@ The street board is the main product experience. It is primarily for READING not
 3. Below the post, a `Komentari` section lists the comments (oldest first), or `Još nema komentara.` with a short `Budi prvi koji će odgovoriti.` if there are none.
 4. Below the comments, the user can write a comment (`Dodaj komentar`, `Objavi komentar`). On success the user stays on the same page and the new comment appears at the end of the list. Refreshing the page does not resubmit or duplicate the comment.
 5. An empty/whitespace-only or too long comment is rejected with a Serbian error message; nothing is created.
-6. If the post id is missing or unknown, the page shows `Objava nije pronađena.` and no comment form.
+6. If the post id is missing or unknown, the page shows `Objava nije pronađena.` and no comment form. If the post has expired, the page is still shown with `Objava je istekla` and no comment form (FR-17f).
 7. Back returns to the street board of that post. Comments are never shown on the board itself.
 
 ## 5. Functional requirements
@@ -94,6 +94,9 @@ The street board is the main product experience. It is primarily for READING not
 - FR-17a Each board card shows a small text-only comment count in its footer next to the date: `Nema komentara`, `1 komentar`, `N komentara` (N ≥ 2). The count comes from `commentCount` in `GET /api/streets/:streetId/posts` (one query, no schema change). It is not a link and shows no comment content.
 - FR-17b The street board has a category filter between the `Objave` heading and the cards: wrapping chip buttons `Sve` + the six categories, `Sve` selected by default, one active at a time, with `aria-pressed` and a checkmark on the active chip. Filtering is client-side over the already loaded posts (no API change, newest-first order kept, no page reload, no URL/persisted state; it resets to `Sve` on reload or return). If posts exist but none match, `Nema objava u ovoj kategoriji.` is shown; a street with no posts at all keeps the normal empty state and shows no filter.
 - FR-17c A post may be marked important with the optional, unchecked-by-default `Označi kao važno` checkbox on the new-post page (hint: `Za obaveštenja koja komšije treba posebno da primete.`). Important is a post property, not a category. Board order is important posts (newest first) followed by ordinary posts (newest first); the category filter keeps this order. Important cards and the post detail page show a small `Važno` label; cards also get a slightly stronger border and a faint tint. The API returns `isImportant` (boolean); creation accepts `isImportant` and rejects non-boolean values. Stored as `post.is_important` (0/1, default 0); existing posts are ordinary. TEMPORARY: with no accounts or moderation, any anonymous poster can mark a post important. This must be revisited when accounts/moderation exist.
+- FR-17d Post lifetime (D-11): the new-post page has a `Trajanje objave` select after the important checkbox: `1 dan`, `3 dana`, `7 dana` (default), `14 dana`, `30 dana`, `Bez vremenskog ograničenja`, with the helper text `Objava će biti automatski uklonjena sa table nakon 7 dana, osim ako izabereš drugi period.` Lifetime is independent of `Važno` and of category. The client sends `lifetime` as 1, 3, 7, 14, 30 or `"unlimited"` (strict allowlist; anything else is rejected with `Izaberite trajanje objave iz ponuđene liste.`; if omitted the server uses 7). The server calculates `post.expires_at` (UTC `YYYY-MM-DD HH:MM:SS`, now + N x 24 h; NULL for unlimited); the client never sends a timestamp.
+- FR-17e Expired posts (`expires_at` in the past) are excluded by the board query before ordering, so they never appear under `Sve`, any category, or as important. The client does no expiry logic. Expiration is enforced at read time: nothing is physically deleted and there is no cleanup job, archive, `show expired` toggle or renewal UI. Posts created before this feature have `expires_at` NULL and stay unlimited.
+- FR-17f An expired post stays viewable by its direct URL. The detail page shows an `Objava je istekla` label, keeps existing comments visible, hides the comment form and shows `Komentarisanje nije dostupno jer je objava istekla.` The comment API also rejects new comments on an expired post (HTTP 409, same message). For active timed posts the detail footer shows `Važi do dd.mm.yyyy. u HH:mm` (Europe/Belgrade); board cards show no expiration information.
 - FR-18 Comments are flat (no replies/threads) and anonymous: no author, name, avatar or account is stored. A comment has id, post, body and created date/time. Every comment displays the fixed UI label `Anonimni komšija`; this label is a constant, not stored data and not an identity.
 - FR-19 Comments are listed oldest first (conversational order, D-10). Each comment shows the `Anonimni komšija` label, its text and its date/time (same `dd.mm.yyyy. u HH:mm` format as posts), as compact separate blocks that are clearly less prominent than the post.
 - FR-20 Comment creation: body required, trimmed, whitespace-only rejected, max 1000 characters; validated on the server (D-10). Success keeps the user on the post page and shows the new comment immediately.
@@ -107,7 +110,7 @@ The street board is the main product experience. It is primarily for READING not
 
 - **city**: id, name
 - **street**: id, city_id → city, name, normalized_name
-- **post**: id, street_id → street, category, title, body, house_number (nullable), is_important (0/1, default 0), created_at
+- **post**: id, street_id → street, category, title, body, house_number (nullable), is_important (0/1, default 0), expires_at (nullable UTC timestamp, NULL = no expiration), created_at
 - **comment**: id, post_id → post, body, created_at (no author; flat, no parent comment)
 
 Notes for evolvability (no extra tables/columns now): streets belong to a city via `city_id`; a future `area` level could sit between city and street; a future visibility scope would be one added column on `post`. `street` also has `normalized_name` with `UNIQUE(city_id, normalized_name)` (D-7). Categories are a fixed list of codes (D-9) enforced by the app and a CHECK constraint. The current model has no users or memberships; see section 9 for the intended future shape (do not add it now).
@@ -125,6 +128,7 @@ Decided by the product owner (D-1 to D-9, Milestone 1 review), and by the develo
 - D-7 Street normalization: trim, collapse consecutive whitespace to one space, compare case-insensitively; the original display name is preserved. `street.normalized_name` with `UNIQUE(city_id, normalized_name)`. No Latin/Cyrillic transliteration: the Latin and Cyrillic spelling of a street are different streets for now. Both scripts are accepted in all user content.
 - D-8 Validation: title required, max 120 chars; body required, max 1500 chars; house/building number optional, plain text, max 20 chars, no numeric-only rule (`14a`, `14/2`, `bb` are valid).
 - D-9 Internal category codes: `obavestenje`, `pomoc`, `poklanjam_prodajem`, `izgubljeno_nadjeno`, `problem_u_kraju`, `dogadjaj`. Serbian labels are handled by the UI.
+- D-11 Post lifetime: default 7 days, choices 1/3/7/14/30 days or unlimited, computed on the server in UTC at creation and compared at read time; expired posts are hidden, never deleted; pre-feature posts are unlimited.
 - D-10 Comments (flat, anonymous): maximum 1000 characters (chosen by the development side as a sensible bound, shorter than the 1500-character post body); body trimmed and required; listed oldest first; no edit, delete, reply, reaction or moderation; no pagination yet.
 
 Remaining assumptions (not stated by the owner):
@@ -137,7 +141,7 @@ Remaining assumptions (not stated by the owner):
 ## 8. Open questions
 
 - OQ-1 Spam/abuse protection with no auth (rate limiting, captcha, none for now)?
-- OQ-2 Do posts expire or get archived (e.g. "radovi sutra" is stale next week)? No expiry assumed.
+- OQ-2 (answered, see D-11 / FR-17d to FR-17f) Posts expire after a chosen lifetime (default 7 days) and are hidden, not deleted. Still open: an archive view, renewing an expired post, and who may do so (needs accounts).
 - OQ-3 Event posts (Događaj): is a separate event date/time field wanted, or is it just in the body text?
 - OQ-4 Should Latin and Cyrillic spellings of the same street ever be unified (transliteration)? Deferred by D-7.
 - OQ-5 Is there an official street dataset for Niš to import, or does the list grow from user entries and seed data only?

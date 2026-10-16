@@ -2,6 +2,12 @@ const streetId = getStreetId();
 const form = document.getElementById('post-form');
 const categorySelect = document.getElementById('category');
 
+// The select holds 1/3/7/14/30 or 'unlimited'; the server validates and computes expires_at.
+function lifetimeValue() {
+  const value = document.getElementById('lifetime').value;
+  return value === 'unlimited' ? value : Number(value);
+}
+
 async function init() {
   for (const [code, label] of Object.entries(CATEGORY_LABELS)) {
     categorySelect.append(new Option(label, code));
@@ -30,6 +36,7 @@ form.addEventListener('submit', async (event) => {
         body: document.getElementById('body').value,
         houseNumber: document.getElementById('house-number').value,
         isImportant: document.getElementById('is-important').checked,
+        lifetime: lifetimeValue(),
       },
     });
     // replace() keeps the finished form out of the back-button history.

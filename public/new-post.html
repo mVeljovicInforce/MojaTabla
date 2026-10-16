@@ -37,6 +37,17 @@
         <p id="is-important-hint" class="hint">Za obaveštenja koja komšije treba posebno da primete.</p>
       </div>
 
+      <label for="lifetime">Trajanje objave</label>
+      <select id="lifetime" aria-describedby="lifetime-hint">
+        <option value="1">1 dan</option>
+        <option value="3">3 dana</option>
+        <option value="7" selected>7 dana</option>
+        <option value="14">14 dana</option>
+        <option value="30">30 dana</option>
+        <option value="unlimited">Bez vremenskog ograničenja</option>
+      </select>
+      <p id="lifetime-hint" class="hint">Objava će biti automatski uklonjena sa table nakon 7 dana, osim ako izabereš drugi period.</p>
+
       <div class="form-actions">
         <button type="submit">Objavi</button>
         <a id="cancel-link" class="button button-secondary" href="/">Otkaži</a>

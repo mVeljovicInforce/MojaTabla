@@ -10,6 +10,7 @@ const CATEGORY_LABELS = {
 };
 
 const IMPORTANT_LABEL = 'Važno';
+const EXPIRED_LABEL = 'Objava je istekla';
 
 function getStreetId() {
   return new URLSearchParams(window.location.search).get('street');

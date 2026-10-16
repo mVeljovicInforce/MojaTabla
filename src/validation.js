@@ -7,6 +7,10 @@ const CATEGORIES = [
   'dogadjaj',
 ];
 
+// Allowed lifetimes in days; 'unlimited' stores no expiration. The client never sends a timestamp.
+const LIFETIMES = [1, 3, 7, 14, 30, 'unlimited'];
+const DEFAULT_LIFETIME_DAYS = 7;
+
 const LIMITS = { title: 120, body: 1500, houseNumber: 20, street: 100, comment: 1000 };
 
 // Counts characters, not UTF-16 units.
@@ -44,6 +48,10 @@ function validatePost(input) {
     return { error: 'Neispravna vrednost za oznaku važno.' };
   }
 
+  if (data.lifetime != null && !LIFETIMES.includes(data.lifetime)) {
+    return { error: 'Izaberite trajanje objave iz ponuđene liste.' };
+  }
+
   if (!CATEGORIES.includes(category)) return { error: 'Izaberite kategoriju.' };
   if (!title) return { error: 'Naslov je obavezan.' };
   if (length(title) > LIMITS.title) {
@@ -57,8 +65,11 @@ function validatePost(input) {
     return { error: `Broj može imati najviše ${LIMITS.houseNumber} karaktera.` };
   }
 
+  const lifetime = data.lifetime == null ? DEFAULT_LIFETIME_DAYS : data.lifetime;
+  const lifetimeDays = lifetime === 'unlimited' ? null : lifetime;
+
   return {
-    value: { category, title, body, houseNumber: houseNumber || null, isImportant: data.isImportant === true },
+    value: { category, title, body, houseNumber: houseNumber || null, isImportant: data.isImportant === true, lifetimeDays },
   };
 }
 

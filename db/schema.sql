@@ -21,6 +21,7 @@ CREATE TABLE IF NOT EXISTS post (
   body         TEXT NOT NULL,
   house_number TEXT,
   is_important INTEGER NOT NULL DEFAULT 0 CHECK (is_important IN (0, 1)),
+  expires_at   TEXT,
   created_at   TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
