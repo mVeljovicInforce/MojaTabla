@@ -17,7 +17,7 @@ Development focuses on the street-board experience: creating and reading posts, 
 1. Serbian language only (all UI text, labels, messages).
 2. No map.
 3. The community unit is a **street**.
-4. A user can: choose a city, choose or enter a street, open that street's board, view posts, and create a post from the board via the `+ Nova objava` action (which opens a separate new-post page).
+4. A user can: choose a city, choose or enter a street, open that street's board, view active posts, and create a post from the board via the `+ Nova objava` action (which opens a separate new-post page).
 5. Post categories (fixed list):
    - Obaveštenje
    - Pomoć
@@ -25,9 +25,10 @@ Development focuses on the street-board experience: creating and reading posts, 
    - Izgubljeno / Nađeno
    - Problem u kraju
    - Događaj
-6. A post contains at minimum: category, title (short headline), body, optional house/building number, created date/time.
+6. A post contains: category, title (short headline), body, optional house/building number, an optional important flag, a lifetime (default 7 days; stored as `expires_at`) and created date/time.
 7. Each post has a dedicated detail page, opened by clicking the post on the street board. Simple flat anonymous comments live only on that page.
-8. No complex authentication, no address verification.
+8. No complex authentication, no address verification. Posting and commenting are anonymous.
+9. Stack: Node.js, Express, `better-sqlite3`/SQLite, plain HTML, CSS and vanilla JavaScript (no build step). Existing SQLite databases are upgraded at startup by simple column checks in `src/db.js` (currently `post.is_important` and `post.expires_at`); this is not a general migration framework.
 
 ## 3. Explicitly out of scope (do NOT implement)
 
@@ -37,7 +38,8 @@ Development focuses on the street-board experience: creating and reading posts, 
 - Subscriptions, payments (FUTURE / POST-MVP, see section 9)
 - Private messaging
 - Likes, followers, reactions, threaded/nested replies, editing or deleting comments, infinite-scroll feeds, or any other social-network mechanics (flat anonymous comments on the post detail page are in scope, see Flow C and FR-16 to FR-22)
-- Moderation tooling
+- Moderation tooling, reporting, user profiles, permissions for who may mark a post important
+- Text search, an archive or history view of expired posts, renewing expired posts
 - Notifications (email/push)
 - Building-level boards, area/neighborhood boards, post visibility scopes (BUILDING / STREET / AREA)
 - React, Next.js, TypeScript, Docker, microservices, ORMs
@@ -46,7 +48,7 @@ Future concepts (influence architecture only, not code): City → Area → Stree
 
 ## 4. User flows
 
-The street board is the main product experience. It is primarily for READING notices; creating a post is a secondary action. The hierarchy is: street name → `+ Nova objava` action → existing posts, newest first.
+The street board is the main product experience. It is primarily for READING notices; creating a post is a secondary action. The hierarchy is: street name → `+ Nova objava` action → existing active posts (important first, then newest first).
 
 **Flow A — Open a street board**
 1. User opens the app (home page).
@@ -57,15 +59,15 @@ The street board is the main product experience. It is primarily for READING not
 
 **Flow B — Create a post**
 1. On a street board, user chooses `+ Nova objava`. This navigates to a dedicated new-post page for that street (`new-post.html?street=ID`).
-2. The new-post page contains: category, title, body/text, optional house/building number, a submit action (`Objavi`) and a cancel/back action (`Otkaži` / `← Nazad na tablu`).
-3. User submits. On success the user is redirected back to the same street board (the creation page is replaced in history, so it is not left in the back-button history). The new post appears first.
+2. The new-post page contains: category, title, body/text, optional house/building number, the `Označi kao važno` checkbox, the `Trajanje objave` select (default 7 dana), a submit action (`Objavi`) and a cancel/back action (`Otkaži` / `← Nazad na tablu`).
+3. User submits. On success the user is redirected back to the same street board (the creation page is replaced in history, so it is not left in the back-button history). The new post appears on the board at the top of its group (important posts first, otherwise first among ordinary posts).
 4. Cancel/back from the new-post page returns to the correct street board without creating a post.
 5. If submission fails validation, the user stays on the new-post page with a Serbian error message and can correct the input.
 6. If the street id is missing or unknown, the new-post page shows an error and no form.
 
 **Flow C — Read a post and comment**
 1. On a street board, user clicks a post (the card is a real link to `post.html?post=ID`).
-2. The post detail page shows: a back link to the correct street board, the street name, category badge, title, full body, optional house/building number and created date/time. The post is the dominant element.
+2. The post detail page shows: a back link to the correct street board, the street name, category badge, a `Važno` label if the post is important, title, full body, optional house/building number, created date/time and, for an active timed post, `Važi do ...`. The post is the dominant element.
 3. Below the post, a `Komentari` section lists the comments (oldest first), or `Još nema komentara.` with a short `Budi prvi koji će odgovoriti.` if there are none.
 4. Below the comments, the user can write a comment (`Dodaj komentar`, `Objavi komentar`). On success the user stays on the same page and the new comment appears at the end of the list. Refreshing the page does not resubmit or duplicate the comment.
 5. An empty/whitespace-only or too long comment is rejected with a Serbian error message; nothing is created.
@@ -77,7 +79,7 @@ The street board is the main product experience. It is primarily for READING not
 - FR-1 Home page lets the user choose a city from a list.
 - FR-2 After a city is chosen, the user can pick an existing street of that city or enter a street name (see D-3, D-4, D-7).
 - FR-3 Each street has exactly one board at a stable URL.
-- FR-4 The board lists the street's posts: category, title, body, house number (if any), created date/time.
+- FR-4 The board lists the street's active (non-expired) posts: category, title, body, house number (if any), created date/time, comment count (FR-17a) and the `Važno` label (FR-17c).
 - FR-5 Post ordering: important posts first, then ordinary posts; newest first within each group (D-6, FR-17c).
 - FR-6 Post creation is on a dedicated new-post page (not on the board), with the fields above; category from the fixed list. See Flow B.
 - FR-7 Server-side validation: category valid, title and body non-empty, length limits (D-8), house number optional.
@@ -85,14 +87,14 @@ The street board is the main product experience. It is primarily for READING not
 - FR-9 All user-visible text is Serbian. User-provided content (titles, post bodies, comments, street names, house numbers) is inserted as text, never as raw HTML.
 - FR-10 Empty board shows the Serbian empty-state message `Još nema objava u ovoj ulici.` with a `Napiši prvu objavu` action that goes to the new-post page.
 - FR-11 The street board does not contain a post creation form. Its primary content is the existing posts; `+ Nova objava` is the only creation entry point on the board.
-- FR-12 After a successful post, the user is redirected to the same street board, and the new post is shown first (see Flow B).
+- FR-12 After a successful post, the user is redirected to the same street board, and the new post is shown at the top of its group (see Flow B).
 - FR-13 Cancel/back from the new-post page returns to the same street board without creating anything.
 - FR-14 Invalid or missing street ids are handled gracefully on both the board and new-post pages (a Serbian "Ulica nije pronađena" message, no broken form).
 - FR-15 Each post on the street board is clickable: the title is a real link and the whole card acts as its target (accessible, with visible keyboard focus). The card does not look like a button.
 - FR-16 Each post has a dedicated detail page at `/post.html?post=ID` showing the content listed in Flow C. The post is visually dominant.
 - FR-17 Comments exist only on the post detail page. The street board shows no comments and no comment previews.
-- FR-17a Each board card shows a small text-only comment count in its footer next to the date: `Nema komentara`, `1 komentar`, `N komentara` (N ≥ 2). The count comes from `commentCount` in `GET /api/streets/:streetId/posts` (one query, no schema change). It is not a link and shows no comment content.
-- FR-17b The street board has a category filter between the `Objave` heading and the cards: wrapping chip buttons `Sve` + the six categories, `Sve` selected by default, one active at a time, with `aria-pressed` and a checkmark on the active chip. Filtering is client-side over the already loaded posts (no API change, newest-first order kept, no page reload, no URL/persisted state; it resets to `Sve` on reload or return). If posts exist but none match, `Nema objava u ovoj kategoriji.` is shown; a street with no posts at all keeps the normal empty state and shows no filter.
+- FR-17a Each board card shows a small text-only comment count in its footer next to the date: `Nema komentara`, `1 komentar`, `N komentara` (N ≥ 2). The count comes from `commentCount` in `GET /api/streets/:streetId/posts` (one query). It is not a link and shows no comment content.
+- FR-17b The street board has a category filter between the `Objave` heading and the cards: wrapping chip buttons `Sve` + the six categories, `Sve` selected by default, one active at a time, with `aria-pressed` and a checkmark on the active chip. Filtering is client-side over the already loaded posts (no API change, server-provided order kept, no page reload, no URL/persisted state; it resets to `Sve` on reload or return). If posts exist but none match, `Nema objava u ovoj kategoriji.` is shown; a street with no posts at all keeps the normal empty state and shows no filter.
 - FR-17c A post may be marked important with the optional, unchecked-by-default `Označi kao važno` checkbox on the new-post page (hint: `Za obaveštenja koja komšije treba posebno da primete.`). Important is a post property, not a category. Board order is important posts (newest first) followed by ordinary posts (newest first); the category filter keeps this order. Important cards and the post detail page show a small `Važno` label; cards also get a slightly stronger border and a faint tint. The API returns `isImportant` (boolean); creation accepts `isImportant` and rejects non-boolean values. Stored as `post.is_important` (0/1, default 0); existing posts are ordinary. TEMPORARY: with no accounts or moderation, any anonymous poster can mark a post important. This must be revisited when accounts/moderation exist.
 - FR-17d Post lifetime (D-11): the new-post page has a `Trajanje objave` select after the important checkbox: `1 dan`, `3 dana`, `7 dana` (default), `14 dana`, `30 dana`, `Bez vremenskog ograničenja`, with the helper text `Objava će biti automatski uklonjena sa table nakon 7 dana, osim ako izabereš drugi period.` Lifetime is independent of `Važno` and of category. The client sends `lifetime` as 1, 3, 7, 14, 30 or `"unlimited"` (strict allowlist; anything else is rejected with `Izaberite trajanje objave iz ponuđene liste.`; if omitted the server uses 7). The server calculates `post.expires_at` (UTC `YYYY-MM-DD HH:MM:SS`, now + N x 24 h; NULL for unlimited); the client never sends a timestamp.
 - FR-17e Expired posts (`expires_at` in the past) are excluded by the board query before ordering, so they never appear under `Sve`, any category, or as important. The client does no expiry logic. Expiration is enforced at read time: nothing is physically deleted and there is no cleanup job, archive, `show expired` toggle or renewal UI. Posts created before this feature have `expires_at` NULL and stay unlimited.
@@ -102,7 +104,7 @@ The street board is the main product experience. It is primarily for READING not
 - FR-20 Comment creation: body required, trimmed, whitespace-only rejected, max 1000 characters; validated on the server (D-10). Success keeps the user on the post page and shows the new comment immediately.
 - FR-21 Comments cannot be edited, deleted, replied to or reacted to.
 - FR-22 Invalid/missing post ids and invalid comment bodies produce clear Serbian messages; user-provided text (posts and comments) is rendered without raw HTML insertion and keeps line breaks. Long unbroken text wraps and never causes horizontal scrolling.
-- FR-23 The street board layout is responsive: 1 column on mobile, about 2 columns on medium widths, about 3 columns on large desktops. Cards keep their natural heights. DOM, Tab and visual order are the same and are newest first.
+- FR-23 The street board layout is responsive: 1 column on mobile, about 2 columns on medium widths, about 3 columns on large desktops. Cards keep their natural heights. DOM, Tab and visual order are the same and follow FR-5 (important first, then newest first).
 - FR-24 On multi-column layouts the board cards use a restrained notice-board look: warm paper-like surfaces, light borders and shadow, no pin dot (it could be mistaken for `Važno`), and a tilt of at most about 0.5 degrees. Cards have no tilt on mobile. The category badge remains the primary category indicator. This is visual only and must not change behaviour or content.
 - FR-25 The street board page and the post detail page are mobile-first. The desktop layouts may be richer, but mobile must stay single-column, full-width, without horizontal overflow, and with comfortably tappable controls.
 
@@ -124,19 +126,20 @@ Decided by the product owner (D-1 to D-9, Milestone 1 review), and by the develo
 - D-3 Only one city is seeded for the MVP: `Niš`. Cities are not user-created.
 - D-4 Users may create a street if it does not already exist in the city.
 - D-5 Posting is anonymous; no author identity stored.
-- D-6 Posts are shown newest first. No edit or delete.
+- D-6 Posts are shown newest first within their group (amended by FR-5: active important posts come first). No edit or delete.
 - D-7 Street normalization: trim, collapse consecutive whitespace to one space, compare case-insensitively; the original display name is preserved. `street.normalized_name` with `UNIQUE(city_id, normalized_name)`. No Latin/Cyrillic transliteration: the Latin and Cyrillic spelling of a street are different streets for now. Both scripts are accepted in all user content.
 - D-8 Validation: title required, max 120 chars; body required, max 1500 chars; house/building number optional, plain text, max 20 chars, no numeric-only rule (`14a`, `14/2`, `bb` are valid).
 - D-9 Internal category codes: `obavestenje`, `pomoc`, `poklanjam_prodajem`, `izgubljeno_nadjeno`, `problem_u_kraju`, `dogadjaj`. Serbian labels are handled by the UI.
-- D-11 Post lifetime: default 7 days, choices 1/3/7/14/30 days or unlimited, computed on the server in UTC at creation and compared at read time; expired posts are hidden, never deleted; pre-feature posts are unlimited.
 - D-10 Comments (flat, anonymous): maximum 1000 characters (chosen by the development side as a sensible bound, shorter than the 1500-character post body); body trimmed and required; listed oldest first; no edit, delete, reply, reaction or moderation; no pagination yet.
+- D-11 Post lifetime: default 7 days, choices 1/3/7/14/30 days or unlimited, computed on the server in UTC at creation and compared at read time; expired posts are hidden, never deleted; pre-feature posts are unlimited.
 
 Remaining assumptions (not stated by the owner):
 
 - A-1 Street name max length is 100 characters (needed a bound; not specified).
 - A-2 Single server process, single SQLite file, local/dev deployment first.
 - A-3 No pagination until post volume demands it.
-- A-4 Dates are stored in UTC (SQLite `datetime('now')`) and displayed in Europe/Belgrade time.
+- A-4 Dates, including `expires_at`, are stored in UTC (SQLite `datetime('now')`) and displayed in Europe/Belgrade time. Expiry is compared in UTC at read time.
+- A-5 Existing databases are upgraded at startup by column checks (`is_important`, `expires_at`); older posts become ordinary and unlimited.
 
 ## 8. Open questions
 
@@ -147,6 +150,7 @@ Remaining assumptions (not stated by the owner):
 - OQ-5 Is there an official street dataset for Niš to import, or does the list grow from user entries and seed data only?
 - OQ-6 Hosting/deployment target and the Node version to run in production.
 - OQ-7 Date/time display: posts and comments currently show `dd.mm.yyyy. u HH:mm` in Europe/Belgrade time. Should relative forms such as "danas" or "juče" be used for recent items? (Not decided; see section 10.)
+- OQ-9 Who may mark a post important once accounts/moderation exist (today any anonymous poster can; see FR-17c)? Not decided and not part of the current backlog.
 - OQ-8 (future) See section 9.6 for the open questions about accounts, membership and verification. They are not part of the current backlog.
 
 ## 9. Future direction: trusted local membership (FUTURE / POST-MVP)
@@ -208,3 +212,10 @@ The future model must NOT be simply `User -> street_id`. Conceptually it is `Use
 These are ideas only. None is a requirement, and none is in the current backlog. Each needs an explicit product decision and an entry in sections 4 to 7 before anyone implements it.
 
 - Relative time presentation, such as "danas" and "juče" (see OQ-7).
+- Text search on the street board.
+- Archive/history of expired posts, and renewing an expired post (see OQ-2).
+- Moderation and reporting of posts and comments.
+- Permissions for important posts (see OQ-9).
+- Richer notifications.
+
+Accounts, user profiles, verified residents and subscriptions stay in section 9 (FUTURE / POST-MVP).
